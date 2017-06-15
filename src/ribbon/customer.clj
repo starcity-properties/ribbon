@@ -13,6 +13,7 @@
 (s/def ::customer (s/and map? #(= "customer" (:object %))))
 (s/def ::source (s/and map? (comp #{"bank_account" "card"} :object)))
 (s/def ::bank-account (s/and map? #(= "bank_account" (:object %))))
+(s/def ::bank-account (s/and map? #(= "card" (:object %))))
 
 ;; =============================================================================
 ;; Predicates
@@ -87,7 +88,7 @@
 
 (s/fdef active-bank-account
         :args (s/cat :customer ::customer)
-        :ret (s/? ::bank-account))
+        :ret (s/or :bank-account ::bank-account :nothing nil?))
 
 
 (def has-bank-account?
@@ -123,6 +124,30 @@
 (s/fdef verification-failed?
         :args (s/cat :customer ::customer)
         :ret boolean?)
+
+
+(defn credit-cards
+  "The customer's credit card sources."
+  [customer]
+  (filter #(= "card" (:object %)) (sources customer)))
+
+(s/fdef credit-cards
+        :args (s/cat :customer ::customer)
+        :ret (s/* ::card))
+
+
+(defn active-credit-card
+  "The customer's active credit card."
+  [customer]
+  (let [default (default-source customer)]
+    (if (= "card" (:object default))
+      default
+      (first (credit-cards customer)))))
+
+(s/fdef active-credit-card
+        :args (s/cat :customer ::customer)
+        :ret (s/or :card ::card :nothing nil?))
+
 
 ;; =============================================================================
 ;; Sources
@@ -219,6 +244,32 @@
                      :source string?
                      :opts (s/keys* :opt-un [::managed-account ::description]))
         :ret p/chan?)
+
+
+;; =============================================================================
+;; Update
+
+
+(defn update!
+  "Update an existing Stripe customer."
+  [secret-key customer-id & {:keys [managed-account default-source description]}]
+  (ribbon/request (plumbing/assoc-when
+                   {:endpoint   (format "customers/%s" customer-id)
+                    :method     :post
+                    :secret-key secret-key}
+                   :managed-account managed-account)
+                  (plumbing/assoc-when
+                   {}
+                   :description description
+                   :default_source default-source)))
+
+(s/def ::default-source string?)
+(s/fdef update!
+        :args (s/cat :secret-key string?
+                     :customer-id string?
+                     :opts (s/keys* :opt-un [::managed-account ::description ::default-source]))
+        :ret p/chan?)
+
 
 ;; =============================================================================
 ;; Delete
