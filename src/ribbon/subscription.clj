@@ -36,7 +36,11 @@
 
 (defn create!
   "Create a new subscription for `customer-id` under `plan-id`."
-  [secret-key customer-id plan-id & {:keys [source managed-account fee-percent trial-end]}]
+  [secret-key customer-id plan-id & {:keys [source
+                                            managed-account
+                                            fee-percent
+                                            trial-end
+                                            quantity]}]
   (when (some? fee-percent)
     (assert managed-account "When a `fee-percent` is specified, a `managed-account` must also be supplied."))
   (ribbon/request (plumbing/assoc-when
@@ -49,9 +53,11 @@
                     :plan     plan-id}
                    :source source
                    :application_fee_percent fee-percent
-                   :trial_end trial-end)))
+                   :trial_end trial-end
+                   :quantity quantity)))
 
 (s/def ::source string?)
+(s/def ::quantity integer?)
 (s/def ::trial-end integer?)
 (s/fdef create!
         :args (s/cat :secret-key string?
@@ -60,7 +66,8 @@
                      :opts (s/keys* :opt-un [::source
                                              ::managed-account
                                              ::fee-percent
-                                             ::trial-end]))
+                                             ::trial-end
+                                             ::quantity]))
         :ret p/chan?)
 
 ;; =============================================================================
@@ -69,7 +76,7 @@
 
 (defn update!
   "Update the subscription under `subscription-id`."
-  [secret-key subscription-id & {:keys [managed-account fee-percent source]}]
+  [secret-key subscription-id & {:keys [managed-account fee-percent source quantity]}]
   (when (some? fee-percent)
     (assert managed-account "When a `fee-percent` is specified, a `managed-account` must also be supplied."))
   (ribbon/request (plumbing/assoc-when
@@ -80,14 +87,16 @@
                   (plumbing/assoc-when
                    {}
                    :source source
-                   :application_fee_percent fee-percent)))
+                   :application_fee_percent fee-percent
+                   :quantity quantity)))
 
 (s/fdef update!
         :args (s/cat :secret-key string?
                      :subscription-id string?
                      :opts (s/keys* :opt-un [::managed-account
                                              ::fee-percent
-                                             ::source]))
+                                             ::source
+                                             ::quantity]))
         :ret p/chan?)
 
 (comment
