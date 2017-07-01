@@ -1,54 +1,61 @@
 (ns ribbon.subscription
   (:require [clojure.spec :as s]
-            [plumbing.core :as plumbing]
             [ribbon.core :as ribbon]
-            [toolbelt.predicates :as p]))
+            [toolbelt
+             [core :as tb]
+             [predicates :as p]]))
+
 
 ;; =============================================================================
 ;; Specs
 ;; =============================================================================
 
+
 (s/def ::managed-account string?)
 (s/def ::fee-percent float?)
+
 
 ;; =============================================================================
 ;; Fetch
 ;; =============================================================================
 
+
 (defn fetch
   "Fetch the subscription under `subscription-id`."
-  [secret-key subscription-id & {:as opts}]
-  (ribbon/request (merge
+  [conn subscription-id & {:as opts}]
+  (ribbon/request conn
+                  (merge
                    {:endpoint   (format "subscriptions/%s" subscription-id)
-                    :method     :get
-                    :secret-key secret-key}
+                    :method     :get}
                    opts)))
 
 (s/fdef fetch
-        :args (s/cat :secret-key string?
+        :args (s/cat :conn ribbon/conn?
                      :subscription-id string?
                      :opts (s/keys* :opt-un [::managed-account]))
         :ret p/chan?)
+
 
 ;; =============================================================================
 ;; Create
 ;; =============================================================================
 
+
 (defn create!
   "Create a new subscription for `customer-id` under `plan-id`."
-  [secret-key customer-id plan-id & {:keys [source
-                                            managed-account
-                                            fee-percent
-                                            trial-end
-                                            quantity]}]
+  [conn customer-id plan-id & {:keys [source
+                                      managed-account
+                                      fee-percent
+                                      trial-end
+                                      quantity]}]
   (when (some? fee-percent)
     (assert managed-account "When a `fee-percent` is specified, a `managed-account` must also be supplied."))
-  (ribbon/request (plumbing/assoc-when
+  (ribbon/request conn
+                  (tb/assoc-when
                    {:endpoint   "subscriptions"
-                    :method     :post
-                    :secret-key secret-key}
+                    :method     :post}
                    :managed-account managed-account)
-                  (plumbing/assoc-when
+                  (tb/assoc-when
                    {:customer customer-id
                     :plan     plan-id}
                    :source source
@@ -60,7 +67,7 @@
 (s/def ::quantity integer?)
 (s/def ::trial-end integer?)
 (s/fdef create!
-        :args (s/cat :secret-key string?
+        :args (s/cat :conn ribbon/conn?
                      :customer-id string?
                      :plan-id string?
                      :opts (s/keys* :opt-un [::source
@@ -70,34 +77,43 @@
                                              ::quantity]))
         :ret p/chan?)
 
+
 ;; =============================================================================
 ;; Update
 ;; =============================================================================
 
+
 (defn update!
   "Update the subscription under `subscription-id`."
-  [secret-key subscription-id & {:keys [managed-account fee-percent source quantity]}]
+  [conn subscription-id & {:keys [managed-account fee-percent source quantity]}]
   (when (some? fee-percent)
-    (assert managed-account "When a `fee-percent` is specified, a `managed-account` must also be supplied."))
-  (ribbon/request (plumbing/assoc-when
+    (assert (some? managed-account)
+            "When a `fee-percent` is specified, a `managed-account` must also be supplied."))
+  (ribbon/request conn
+                  (tb/assoc-when
                    {:endpoint   (format "subscriptions/%s" subscription-id)
-                    :method     :post
-                    :secret-key secret-key}
+                    :method     :post}
                    :managed-account managed-account)
-                  (plumbing/assoc-when
+                  (tb/assoc-when
                    {}
                    :source source
                    :application_fee_percent fee-percent
                    :quantity quantity)))
 
 (s/fdef update!
-        :args (s/cat :secret-key string?
+        :args (s/cat :conn ribbon/conn?
                      :subscription-id string?
                      :opts (s/keys* :opt-un [::managed-account
                                              ::fee-percent
                                              ::source
                                              ::quantity]))
         :ret p/chan?)
+
+
+;; =============================================================================
+;; repl
+;; =============================================================================
+
 
 (comment
   (do

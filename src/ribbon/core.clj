@@ -3,18 +3,42 @@
             [clojure.core.async :as a :refer [chan put!]]
             [clojure.spec :as s]
             [org.httpkit.client :as http]
-            [plumbing.core :as plumbing]
             [ribbon.codec :as codec]
-            [toolbelt.predicates :as p]))
+            [toolbelt
+             [core :as tb]
+             [predicates :as p]]))
+
+;; =============================================================================
+;; Interface
+;; =============================================================================
+
+
+(defprotocol RibbonRequest
+  "Interface to communicate with the Stripe API."
+  (request
+    [this conf]
+    [this conf params]
+    "Make a Stripe API request."))
+
+
+(defrecord StripeConnection [secret-key])
+
+
+;; =============================================================================
+;; Internal
+;; =============================================================================
+
 
 (def ^:private base-url
   "https://api.stripe.com/v1")
+
 
 (defn- params-for
   [method params]
   (case method
     :get [:query-params params]
     [:body (codec/form-encode params)]))
+
 
 (defn- cb [c]
   (fn [{body :body}]
@@ -24,16 +48,30 @@
         (put! c body))
       (a/close! c))))
 
-(defn request
+
+;; =============================================================================
+;; Base Request
+;; =============================================================================
+
+
+(s/def ::secret-key string?)
+(s/def ::endpoint string?)
+(s/def ::method keyword?)
+(s/def ::managed-account string?)
+(s/def ::config
+  (s/keys :req-un [::endpoint ::method]
+          :opt-un [::managed-account]))
+
+(defn- request*
   "Initiate a Stripe API request, producing a `core.async` channel that will
   either have the result of a successful request or exception (in the event of
   an error) `put!` onto it."
-  ([conf]
-   (request conf {}))
-  ([{:keys [secret-key endpoint method managed-account] :as conf} params]
+  ([secret-key conf]
+   (request* secret-key conf {}))
+  ([secret-key {:keys [endpoint method managed-account]} params]
    (let [req-map    {:url        (format "%s/%s" base-url endpoint)
                      :method     method
-                     :headers    (plumbing/assoc-when
+                     :headers    (tb/assoc-when
                                   {"Accept" "application/json"}
                                   "Stripe-Account" managed-account)
                      :basic-auth [secret-key ""]}
@@ -42,14 +80,39 @@
        (http/request (assoc req-map k params) (cb c))
        c))))
 
-(s/def ::secret-key string?)
-(s/def ::endpoint string?)
-(s/def ::method keyword?)
-(s/def ::managed-account string?)
-(s/def ::config
-  (s/keys :req-un [::secret-key ::endpoint ::method]
-          :opt-un [::managed-account]))
-
-(s/fdef request
-        :args (s/cat :config ::config :params (s/? map?))
+(s/fdef request*
+        :args (s/cat :secret-key ::secret-key
+                     :config ::config
+                     :params (s/? map?))
         :ret p/chan?)
+
+
+;;; impl
+(extend-protocol RibbonRequest
+  StripeConnection
+  (request
+    ([this conf]
+     (request* (:secret-key this) conf))
+    ([this conf params]
+     (request* (:secret-key this) conf params)))
+
+  java.lang.String
+  (request
+    ([this conf]
+     (request* this conf))
+    ([this conf params]
+     (request* this conf params))))
+
+
+;; =============================================================================
+;; API
+;; =============================================================================
+
+
+(defn stripe-connection
+  "Construct a Stripe connection."
+  [secret-key]
+  (map->StripeConnection {:secret-key secret-key}))
+
+
+(defn conn? [x] (satisfies? RibbonRequest x))

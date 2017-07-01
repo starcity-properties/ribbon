@@ -6,17 +6,53 @@
              [core :as tb]
              [predicates :as p]]))
 
+
 ;; =============================================================================
-;; Selectors
+;; Interface
 ;; =============================================================================
 
+
+#_(defprotocol StripeCustomer
+    "Interface for interacting with a Stripe customer."
+    (customer-id [this]
+      "Produce the customer's ID.")
+    (sources [this]
+      "Produce the customer's list of sources.")
+    (default-source [this]
+      "Produce the customer's default source.")
+    (bank-accounts [this]
+      "Produce the customer's bank accounts.")
+    (active-bank-account [this]
+      "The active bank account.")
+    (has-bank-account? [this]
+      "Does customer have a bank account?")
+    (has-verified-bank-account? [this]
+      "Does customer have a verified bank account?")
+    (verification-failed? [this]
+      "Did the customer's verification attempt fail?")
+    (credit-cards [this]
+      "Produce the customer's credit cards")
+    (active-credit-card [this]
+      "The active credit card."))
+
+
+;; =============================================================================
+;; Spec
+;; =============================================================================
+
+
+(s/def ::managed-account string?)
+(s/def ::description string?)
 (s/def ::customer (s/and map? #(= "customer" (:object %))))
 (s/def ::source (s/and map? (comp #{"bank_account" "card"} :object)))
 (s/def ::bank-account (s/and map? #(= "bank_account" (:object %))))
 (s/def ::bank-account (s/and map? #(= "card" (:object %))))
 
+
 ;; =============================================================================
 ;; Predicates
+;; =============================================================================
+
 
 (defn customer?
   "Is `m` a customer response from Stripe?"
@@ -36,8 +72,11 @@
         :args (s/cat :customer ::customer)
         :ret boolean?)
 
+
 ;; =============================================================================
 ;; Customer
+;; =============================================================================
+
 
 (def customer-id
   "The `customer`'s id."
@@ -152,6 +191,7 @@
 ;; =============================================================================
 ;; Sources
 
+
 (def token
   "The `source`'s token."
   :id)
@@ -189,57 +229,47 @@
         :ret boolean?)
 
 
-(comment
-  (verification-failed? (<!! (fetch secret-key sample-customer)))
-
-  (verification-failed? (<!! (fetch secret-key "cus_AYmrl5Dyfgkng9")))
-
-
-  )
-
 ;; =============================================================================
-;; Stripe API
+;; API
 ;; =============================================================================
 
-(s/def ::managed-account string?)
-(s/def ::description string?)
 
 ;; =============================================================================
 ;; Fetch
 
+
 (defn fetch
   "Fetch the customer identified by `customer-id`."
-  [secret-key customer-id & {:as opts}]
-  (ribbon/request (merge
-                   {:endpoint   (format "customers/%s" customer-id)
-                    :method     :get
-                    :secret-key secret-key}
-                   opts)))
+  [conn customer-id & {:as opts}]
+  (ribbon/request conn (merge
+                        {:endpoint   (format "customers/%s" customer-id)
+                         :method     :get}
+                        opts)))
 
 (s/fdef fetch
-        :args (s/cat :secret-key string?
+        :args (s/cat :conn ribbon/conn?
                      :customer-id string?
-                     :opts (s/keys* :opt-un [::managed-account]))
+                     :opts (s/keys :opt-un [::managed-account]))
         :ret p/chan?)
+
 
 ;; =============================================================================
 ;; Create
 
 (defn create!
   "Create a new Stripe customer."
-  [secret-key email source & {:keys [description managed-account]}]
-  (ribbon/request (plumbing/assoc-when
-                   {:endpoint   "customers"
-                    :method     :post
-                    :secret-key secret-key}
-                   :managed-account managed-account)
-                  (plumbing/assoc-when
+  [conn email source & {:keys [description managed-account]}]
+  (ribbon/request conn (tb/assoc-when
+                        {:endpoint   "customers"
+                         :method     :post}
+                        :managed-account managed-account)
+                  (tb/assoc-when
                    {:email  email
                     :source source}
                    :description description)))
 
 (s/fdef create!
-        :args (s/cat :secret-key string?
+        :args (s/cat :conn ribbon/conn?
                      :email string?
                      :source string?
                      :opts (s/keys* :opt-un [::managed-account ::description]))
@@ -252,20 +282,19 @@
 
 (defn update!
   "Update an existing Stripe customer."
-  [secret-key customer-id & {:keys [managed-account default-source description]}]
-  (ribbon/request (plumbing/assoc-when
-                   {:endpoint   (format "customers/%s" customer-id)
-                    :method     :post
-                    :secret-key secret-key}
-                   :managed-account managed-account)
-                  (plumbing/assoc-when
+  [conn customer-id & {:keys [managed-account default-source description]}]
+  (ribbon/request conn (tb/assoc-when
+                        {:endpoint   (format "customers/%s" customer-id)
+                         :method     :post}
+                        :managed-account managed-account)
+                  (tb/assoc-when
                    {}
                    :description description
                    :default_source default-source)))
 
 (s/def ::default-source string?)
 (s/fdef update!
-        :args (s/cat :secret-key string?
+        :args (s/cat :conn ribbon/conn?
                      :customer-id string?
                      :opts (s/keys* :opt-un [::managed-account ::description ::default-source]))
         :ret p/chan?)
@@ -274,38 +303,38 @@
 ;; =============================================================================
 ;; Delete
 
+
 (defn delete!
   "Delete the stripe customer identified by `customer-id`."
-  [secret-key customer-id & {:as opts}]
-  (ribbon/request (merge
-                   {:endpoint   (format "customers/%s" customer-id)
-                    :method     :delete
-                    :secret-key secret-key}
-                   opts)))
+  [conn customer-id & {:as opts}]
+  (ribbon/request conn (merge
+                        {:endpoint   (format "customers/%s" customer-id)
+                         :method     :delete}
+                        opts)))
 
 (s/fdef delete!
-        :args (s/cat :secret-key string?
+        :args (s/cat :conn ribbon/conn?
                      :customer-id string?
-                     :opts (s/keys* :opt-un [::managed-account]))
+                     :opts (s/keys :opt-un [::managed-account]))
         :ret p/chan?)
 
+
 ;; =============================================================================
-;; Verify Source
+;; Verify Bank Account
 
 (defn verify-bank-account!
   "Verify the microdeposits for `customer-id`."
-  [secret-key customer-id bank-token amount-1 amount-2 & {:as opts}]
-  (ribbon/request (merge
-                   {:endpoint   (format "customers/%s/sources/%s/verify"
-                                        customer-id bank-token)
-                    :method     :post
-                    :secret-key secret-key}
-                   opts)
+  [conn customer-id bank-token amount-1 amount-2 & {:as opts}]
+  (ribbon/request conn (merge
+                        {:endpoint   (format "customers/%s/sources/%s/verify"
+                                             customer-id bank-token)
+                         :method     :post}
+                        opts)
                   {:amounts [amount-1 amount-2]}))
 
 (s/def ::deposit-amount (s/and integer? #(> % 0) #(< % 100)))
 (s/fdef verify-bank-account!
-        :args (s/cat :secret-key string?
+        :args (s/cat :conn ribbon/conn?
                      :customer-id string?
                      :bank-token string?
                      :amount-1 ::deposit-amount
@@ -318,20 +347,32 @@
 
 (defn add-source!
   "Add `source` to the customer identified by `customer-id`."
-  [secret-key customer-id source & {:as opts}]
-  (ribbon/request (merge
-                   {:endpoint   (format "customers/%s/sources" customer-id)
-                    :method     :post
-                    :secret-key secret-key}
-                   opts)
+  [conn customer-id source opts]
+  (ribbon/request conn (merge
+                        {:endpoint   (format "customers/%s/sources" customer-id)
+                         :method     :post}
+                        opts)
                   {:source source}))
 
 (s/fdef add-source!
-        :args (s/cat :secret-key string?
+        :args (s/cat :conn ribbon/conn?
                      :customer-id string?
                      :source string?
                      :opts (s/keys* :opt-un [::managed-account]))
         :ret p/chan?)
+
+
+#_(defn delete-source!
+  "Delete the source identified by `source-id` from the customer identified by
+  `customer-id`."
+  [conn customer-id source-id opts]
+  )
+
+
+;; =============================================================================
+;; repl
+;; =============================================================================
+
 
 (comment
   (do

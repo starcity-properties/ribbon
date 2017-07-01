@@ -1,34 +1,56 @@
- (ns ribbon.charge
+(ns ribbon.charge
   (:require [clojure.spec :as s]
-            [plumbing.core :as plumbing]
             [ribbon.core :as ribbon]
-            [toolbelt.predicates :as p]))
+            [toolbelt
+             [core :as tb]
+             [predicates :as p]]))
 
+
+;; =============================================================================
+;; Spec
+;; =============================================================================
+
+
+(s/def ::description string?)
+(s/def ::email string?)
 (s/def ::managed-account string?)
 (s/def ::customer-id string?)
 
+
+;; =============================================================================
+;; Methods
+;; =============================================================================
+
+
+;; =============================================================================
+;; Fetch
+
+
 (defn fetch
   "Fetch the charge identified by `charge-id`."
-  [secret-key charge-id & {:as opts}]
-  (ribbon/request (merge
-                   {:endpoint   (format "charges/%s" charge-id)
-                    :method     :get
-                    :secret-key secret-key}
-                   opts)))
+  [onn charge-id & {:as opts}]
+  (ribbon/request conn (merge
+                        {:endpoint   (format "charges/%s" charge-id)
+                         :method     :get}
+                        opts)))
 
 (s/fdef fetch
-        :args (s/cat :secret-key string?
+        :args (s/cat :conn ribbon/conn?
                      :charge-id string?
                      :opts (s/keys* :opt-un [::managed-account]))
         :ret p/chan?)
 
+
+;; =============================================================================
+;; Create
+
+
 (defn create!
   "Create a new charge."
-  [secret-key amount source & {:keys [description customer-id managed-account email]}]
-  (ribbon/request {:endpoint   "charges"
-                   :method     :post
-                   :secret-key secret-key}
-                  (plumbing/assoc-when
+  [conn amount source & {:keys [description customer-id managed-account email]}]
+  (ribbon/request conn {:endpoint   "charges"
+                        :method     :post}
+                  (tb/assoc-when
                    {:amount   amount
                     :source   source
                     :currency "usd"}
@@ -37,10 +59,8 @@
                    :description description
                    :destination managed-account)))
 
-(s/def ::description string?)
-(s/def ::email string?)
 (s/fdef create!
-        :args (s/cat :secret-key string?
+        :args (s/cat :conn ribbon/conn?
                      :amount integer?
                      :source string?
                      :opts (s/keys* :opt-un [::description
@@ -48,6 +68,13 @@
                                              ::managed-account
                                              ::email]))
         :ret p/chan?)
+
+
+;; =============================================================================
+;; repl
+;; =============================================================================
+
+
 
 (comment
   (do
@@ -62,22 +89,23 @@
 
   (require '[clojure.core.async :refer [<!!]])
 
-  ;; Works
-  (<!! (fetch secret-key sample-managed-charge
-              :managed-account sample-managed-account))
+  (def conn (ribbon/stripe-connection secret-key))
 
   ;; Works
-  (<!! (create! secret-key 1000 "card_1ADjO1IvRccmW9nOnXB2upzB"
-                :description "test card charge from Ribbon lib"
-                :customer-id "cus_AYr6e1rdK4hGF6"
-                :email "josh@joinstarcity.com"))
+  (<!! (fetch conn sample-managed-charge {:managed-account sample-managed-account}))
+
+  ;; Works
+  (<!! (create! conn 1000 "card_1ADjO1IvRccmW9nOnXB2upzB"
+                {:description "test card charge from Ribbon lib"
+                 :customer-id "cus_AYr6e1rdK4hGF6"
+                 :email "josh@joinstarcity.com"}))
 
   ;; Works
   ;; NOTE: Creates a connect charge via the platform
-  (<!! (create! secret-key 1000 sample-bank-source
-                :managed-account sample-managed-account
-                :description "test bank charge from Ribbon lib"
-                :customer-id sample-customer
-                :email "josh@joinstarcity.com"))
+  (<!! (create! conn 1000 sample-bank-source
+                {:managed-account sample-managed-account
+                 :description "test bank charge from Ribbon lib"
+                 :customer-id sample-customer
+                 :email "josh@joinstarcity.com"}))
 
   )

@@ -1,18 +1,23 @@
 (ns ribbon.plan
   (:require [clojure.spec :as s]
-            [plumbing.core :as plumbing]
             [ribbon.core :as ribbon]
-            [toolbelt.predicates :as p]))
+            [toolbelt
+             [core :as tb]
+             [predicates :as p]]))
+
 
 (def ^:private max-descriptor-length
   "Max character length of a plan's statement descriptor."
   22)
 
+
 ;; =============================================================================
 ;; Spec
 ;; =============================================================================
 
+
 (s/def ::managed-account string?)
+
 
 ;; =============================================================================
 ;; Fetch
@@ -20,35 +25,35 @@
 
 (defn fetch
   "Fetch the plan identified by `plan-id`."
-  [secret-key plan-id & {:as opts}]
-  (ribbon/request (merge
-                   {:endpoint   (format "plans/%s" plan-id)
-                    :method     :get
-                    :secret-key secret-key}
-                   opts)))
+  [conn plan-id & {:as opts}]
+  (ribbon/request conn (merge
+                        {:endpoint   (format "plans/%s" plan-id)
+                         :method     :get}
+                        opts)))
 
 (s/fdef fetch
-        :args (s/cat :secret-key string?
+        :args (s/cat :conn ribbon/conn?
                      :plan-id string?
                      :opts (s/keys* :opt-un [::managed-account]))
         :ret p/chan?)
+
 
 ;; =============================================================================
 ;; Create
 ;; =============================================================================
 
+
 (defn create!
   "Create a new plan."
-  [secret-key plan-id name amount interval & {:keys [trial-days descriptor metadata managed-account]}]
+  [conn plan-id name amount interval & {:keys [trial-days descriptor metadata managed-account]}]
   (when (some? descriptor)
     (assert (<= (count descriptor) max-descriptor-length)
             "The statement descriptor must be less than or equal to 22 characters."))
-  (ribbon/request (plumbing/assoc-when
-                   {:endpoint   "plans"
-                    :method     :post
-                    :secret-key secret-key}
-                   :managed-account managed-account)
-                  (plumbing/assoc-when
+  (ribbon/request conn (tb/assoc-when
+                        {:endpoint   "plans"
+                         :method     :post}
+                        :managed-account managed-account)
+                  (tb/assoc-when
                    {:id       plan-id
                     :amount   amount
                     :currency "usd"
@@ -61,7 +66,7 @@
 (s/def ::descriptor (s/and string? #(<= (count %) max-descriptor-length)))
 (s/def ::metadata map?)
 (s/fdef create!
-        :args (s/cat :secret-key string?
+        :args (s/cat :conn ribbon/conn?
                      :plan-id string?
                      :name string?
                      :amount pos-int?
@@ -71,6 +76,12 @@
                                              ::metadata
                                              ::managed-account]))
         :ret p/chan?)
+
+
+;; =============================================================================
+;; repl
+;; =============================================================================
+
 
 (comment
   (do
