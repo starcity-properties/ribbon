@@ -28,7 +28,7 @@
 
 (defn fetch
   "Fetch the charge identified by `charge-id`."
-  [onn charge-id & {:as opts}]
+  [conn charge-id & {:as opts}]
   (ribbon/request conn (merge
                         {:endpoint   (format "charges/%s" charge-id)
                          :method     :get}
