@@ -1,4 +1,4 @@
-(defproject starcity/ribbon "0.3.0-SNAPSHOT"
+(defproject starcity/ribbon "0.3.0"
   :description "core.async based interface to Stripe REST API."
   :url "https://github.com/starcity-properties/ribbon"
   :license {:name "Eclipse Public License"
@@ -9,8 +9,7 @@
                  [cheshire "5.6.3"]
                  [http-kit "2.2.0"]
                  [cheshire "5.6.3"]
-                 [prismatic/plumbing "0.5.3"]
-                 [starcity/toolbelt "0.1.6"]]
+                 [starcity/toolbelt "0.1.7"]]
 
   :plugins [[s3-wagon-private "1.2.0"]]
 
