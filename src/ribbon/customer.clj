@@ -188,6 +188,20 @@
         :ret (s/or :card ::card :nothing nil?))
 
 
+(defn default-source-type
+  "Produce the type of the `customer`"
+  [customer]
+  (let [token (:default_source customer)]
+    (:object
+     (tb/find-by
+      #(= token (:id %))
+      (sources customer)))))
+
+(s/fdef default-source-type
+        :args (s/cat :customer ::customer)
+        :ret (s/or :nothing nil? :type #{"bank_account" "card"}))
+
+
 ;; =============================================================================
 ;; Sources
 
@@ -249,7 +263,7 @@
 (s/fdef fetch
         :args (s/cat :conn ribbon/conn?
                      :customer-id string?
-                     :opts (s/keys :opt-un [::managed-account]))
+                     :opts (s/keys* :opt-un [::managed-account]))
         :ret p/chan?)
 
 
