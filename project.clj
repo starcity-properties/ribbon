@@ -1,4 +1,4 @@
-(defproject starcity/ribbon "0.3.1"
+(defproject starcity/ribbon "0.4.0"
   :description "core.async based interface to Stripe REST API."
   :url "https://github.com/starcity-properties/ribbon"
   :license {:name "Eclipse Public License"
@@ -6,7 +6,6 @@
   :dependencies [[org.clojure/clojure "1.9.0-alpha14"]
                  [org.clojure/test.check "0.9.0"]
                  [org.clojure/core.async "0.2.395"]
-                 [cheshire "5.6.3"]
                  [http-kit "2.2.0"]
                  [cheshire "5.6.3"]
                  [starcity/toolbelt "0.1.7"]]
