@@ -46,7 +46,7 @@
 (s/def ::customer (s/and map? #(= "customer" (:object %))))
 (s/def ::source (s/and map? (comp #{"bank_account" "card"} :object)))
 (s/def ::bank-account (s/and map? #(= "bank_account" (:object %))))
-(s/def ::bank-account (s/and map? #(= "card" (:object %))))
+(s/def ::card (s/and map? #(= "card" (:object %))))
 
 
 ;; =============================================================================
@@ -107,6 +107,20 @@
         :ret string?)
 
 
+(defn default-source-type
+  "Produce the type of the `customer`"
+  [customer]
+  (let [token (:default_source customer)]
+    (:object
+     (tb/find-by
+      #(= token (:id %))
+      (sources customer)))))
+
+(s/fdef default-source-type
+        :args (s/cat :customer ::customer)
+        :ret (s/or :nothing nil? :type #{"bank_account" "card"}))
+
+
 (defn bank-accounts
   "The customer's bank account sources."
   [customer]
@@ -115,6 +129,19 @@
 (s/fdef bank-accounts
         :args (s/cat :customer ::customer)
         :ret (s/* ::bank-account))
+
+
+(declare verified-bank-account? unverified-bank-account?)
+
+
+(defn unverified-bank-account
+  "The customer's bank account that is pending verification."
+  [customer]
+  (tb/find-by unverified-bank-account? (bank-accounts customer)))
+
+(s/fdef active-bank-account
+        :args (s/cat :customer ::customer)
+        :ret (s/or :bank-account ::bank-account))
 
 
 (defn active-bank-account
@@ -138,8 +165,6 @@
         :args (s/cat :customer ::customer)
         :ret boolean?)
 
-
-(declare bank-accounts verified-bank-account?)
 
 (defn has-verified-bank-account?
   "Does `customer` have a verified bank account?"
@@ -188,22 +213,9 @@
         :ret (s/or :card ::card :nothing nil?))
 
 
-(defn default-source-type
-  "Produce the type of the `customer`"
-  [customer]
-  (let [token (:default_source customer)]
-    (:object
-     (tb/find-by
-      #(= token (:id %))
-      (sources customer)))))
-
-(s/fdef default-source-type
-        :args (s/cat :customer ::customer)
-        :ret (s/or :nothing nil? :type #{"bank_account" "card"}))
-
-
 ;; =============================================================================
 ;; Sources
+;; =============================================================================
 
 
 (def token
@@ -239,17 +251,19 @@
   (= "verified" (:status bank-account)))
 
 (s/fdef verified-bank-account?
-        :args (s/cat :bank-account ::bank-account)
+        :args (s/cat :bank-account ::source)
         :ret boolean?)
 
 
-;; =============================================================================
-;; API
-;; =============================================================================
+(defn unverified-bank-account?
+  "Is this bank account unverified?"
+  [bank-account]
+  (not (#{"verified" "verification_failed"} (:status bank-account))))
 
 
 ;; =============================================================================
 ;; Fetch
+;; =============================================================================
 
 
 (defn fetch
@@ -269,6 +283,8 @@
 
 ;; =============================================================================
 ;; Create
+;; =============================================================================
+
 
 (defn create!
   "Create a new Stripe customer."
@@ -292,6 +308,7 @@
 
 ;; =============================================================================
 ;; Update
+;; =============================================================================
 
 
 (defn update!
@@ -316,6 +333,7 @@
 
 ;; =============================================================================
 ;; Delete
+;; =============================================================================
 
 
 (defn delete!
@@ -335,6 +353,8 @@
 
 ;; =============================================================================
 ;; Verify Bank Account
+;; =============================================================================
+
 
 (defn verify-bank-account!
   "Verify the microdeposits for `customer-id`."
@@ -358,10 +378,12 @@
 
 ;; =============================================================================
 ;; Add Source
+;; =============================================================================
+
 
 (defn add-source!
   "Add `source` to the customer identified by `customer-id`."
-  [conn customer-id source opts]
+  [conn customer-id source & {:as opts}]
   (ribbon/request conn (merge
                         {:endpoint   (format "customers/%s/sources" customer-id)
                          :method     :post}
