@@ -1,6 +1,5 @@
 (ns ribbon.customer
   (:require [clojure.spec :as s]
-            [plumbing.core :as plumbing]
             [ribbon.core :as ribbon]
             [toolbelt
              [core :as tb]
@@ -74,6 +73,58 @@
 
 
 ;; =============================================================================
+;; Sources
+;; =============================================================================
+
+
+(def token
+  "The `source`'s token."
+  :id)
+
+(s/fdef token
+        :args (s/cat :source ::source)
+        :ret string?)
+
+
+(def account-name
+  "The bank account's name."
+  :bank_name)
+
+(s/fdef account-name
+        :args (s/cat :bank-account ::bank-account)
+        :ret string?)
+
+
+(def account-last4
+  "The last four digits of the bank account number."
+  :last4)
+
+(s/fdef account-last4
+        :args (s/cat :bank-account ::bank-account)
+        :ret string?)
+
+
+(defn verified-bank-account?
+  "Is this bank account verified?"
+  [bank-account]
+  (= "verified" (:status bank-account)))
+
+(s/fdef verified-bank-account?
+        :args (s/cat :bank-account ::source)
+        :ret boolean?)
+
+
+(defn unverified-bank-account?
+  "Is this bank account unverified?"
+  [bank-account]
+  (not (#{"verified" "verification_failed"} (:status bank-account))))
+
+(s/fdef unverified-bank-account?
+        :args (s/cat :bank-account ::source)
+        :ret boolean?)
+
+
+;; =============================================================================
 ;; Customer
 ;; =============================================================================
 
@@ -131,17 +182,14 @@
         :ret (s/* ::bank-account))
 
 
-(declare verified-bank-account? unverified-bank-account?)
-
-
 (defn unverified-bank-account
   "The customer's bank account that is pending verification."
   [customer]
   (tb/find-by unverified-bank-account? (bank-accounts customer)))
 
-(s/fdef active-bank-account
+(s/fdef unverified-bank-account
         :args (s/cat :customer ::customer)
-        :ret (s/or :bank-account ::bank-account))
+        :ret (s/or :bank-account ::bank-account :nothing nil?))
 
 
 (defn active-bank-account
@@ -211,54 +259,6 @@
 (s/fdef active-credit-card
         :args (s/cat :customer ::customer)
         :ret (s/or :card ::card :nothing nil?))
-
-
-;; =============================================================================
-;; Sources
-;; =============================================================================
-
-
-(def token
-  "The `source`'s token."
-  :id)
-
-(s/fdef token
-        :args (s/cat :source ::source)
-        :ret string?)
-
-
-(def account-name
-  "The bank account's name."
-  :bank_name)
-
-(s/fdef account-name
-        :args (s/cat :bank-account ::bank-account)
-        :ret string?)
-
-
-(def account-last4
-  "The last four digits of the bank account number."
-  :last4)
-
-(s/fdef account-last4
-        :args (s/cat :bank-account ::bank-account)
-        :ret string?)
-
-
-(defn verified-bank-account?
-  "Is this bank account verified?"
-  [bank-account]
-  (= "verified" (:status bank-account)))
-
-(s/fdef verified-bank-account?
-        :args (s/cat :bank-account ::source)
-        :ret boolean?)
-
-
-(defn unverified-bank-account?
-  "Is this bank account unverified?"
-  [bank-account]
-  (not (#{"verified" "verification_failed"} (:status bank-account))))
 
 
 ;; =============================================================================
