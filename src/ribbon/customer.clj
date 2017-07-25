@@ -124,6 +124,16 @@
         :ret boolean?)
 
 
+(defn failed-bank-account?
+  "Has this bank account's verification failed?"
+  [bank-account]
+  (= "verification_failed" (:status bank-account)))
+
+(s/fdef failed-bank-account?
+        :args (s/cat :bank-account ::source)
+        :ret boolean?)
+
+
 ;; =============================================================================
 ;; Customer
 ;; =============================================================================
