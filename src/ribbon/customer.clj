@@ -398,11 +398,21 @@
         :ret p/chan?)
 
 
-#_(defn delete-source!
+(defn delete-source!
   "Delete the source identified by `source-id` from the customer identified by
   `customer-id`."
-  [conn customer-id source-id opts]
-  )
+  [conn customer-id source-id & {:as opts}]
+  (ribbon/request conn (merge
+                        {:endpoint (format "customers/%s/sources/%s" customer-id source-id)
+                         :method   :delete}
+                        opts)))
+
+(s/fdef delete-source!
+        :args (s/cat :conn ribbon/conn?
+                     :customer-id string?
+                     :source-id string?
+                     :opts (s/keys* :opt-un [::managed-account]))
+        :ret p/chan?)
 
 
 ;; =============================================================================
@@ -439,5 +449,6 @@
   ;; Works
   (<!! (delete! secret-key "cus_9v4UJ37PFbI4J6"
                 :managed-account sample-managed-account))
+
 
   )
