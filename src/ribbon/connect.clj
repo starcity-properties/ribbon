@@ -112,7 +112,7 @@
                    :method   :post}
                   (merge
                    {:country               "US"
-                    :managed               true
+                    :type                  "custom"
                     "tos_acceptance[ip]"   tos-ip
                     "tos_acceptance[date]" (int (/ (c/to-long (t/now)) 1000))}
                    owner
