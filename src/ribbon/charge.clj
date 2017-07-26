@@ -70,6 +70,37 @@
         :ret p/chan?)
 
 
+
+;; =============================================================================
+;; Refund
+;; =============================================================================
+
+
+(defn refund!
+  "Refund a charge."
+  [conn charge & {:keys [amount metadata reason managed-account]}]
+  (ribbon/request conn (tb/assoc-when
+                        {:endpoint "refunds"
+                         :method   :post}
+                        :managed-account managed-account)
+                  (tb/assoc-when
+                   {:charge charge}
+                   :amount (int (* amount 100))
+                   :metadata metadata
+                   :reason reason)))
+
+(s/def :refund/amount float?)
+(s/def ::metadata map?)
+(s/def ::reason string?)
+(s/fdef refund!
+        :args (s/cat :conn ribbon/conn?
+                     :charge string?
+                     :opts (s/keys* :opt-un [:refund/amount
+                                             ::metadata
+                                             ::reason
+                                             ::managed-account])))
+
+
 ;; =============================================================================
 ;; repl
 ;; =============================================================================
@@ -98,14 +129,19 @@
   (<!! (create! conn 1000 "card_1ADjO1IvRccmW9nOnXB2upzB"
                 {:description "test card charge from Ribbon lib"
                  :customer-id "cus_AYr6e1rdK4hGF6"
-                 :email "josh@joinstarcity.com"}))
+                 :email       "josh@joinstarcity.com"}))
 
   ;; Works
   ;; NOTE: Creates a connect charge via the platform
   (<!! (create! conn 1000 sample-bank-source
                 {:managed-account sample-managed-account
-                 :description "test bank charge from Ribbon lib"
-                 :customer-id sample-customer
-                 :email "josh@joinstarcity.com"}))
+                 :description     "test bank charge from Ribbon lib"
+                 :customer-id     sample-customer
+                 :email           "josh@joinstarcity.com"}))
+
+
+  (<!! (refund! conn "py_1AawdeJDow24Tc1aNCcUP3ts"
+                :managed-account sample-managed-account
+                :amount 1900.0))
 
   )
