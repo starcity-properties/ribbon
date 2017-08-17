@@ -1,9 +1,7 @@
 (ns ribbon.charge
   (:require [clojure.spec :as s]
             [ribbon.core :as ribbon]
-            [toolbelt
-             [core :as tb]
-             [predicates :as p]]))
+            [toolbelt.predicates :as p]))
 
 
 ;; =============================================================================
@@ -22,7 +20,7 @@
 ;; =============================================================================
 
 
-;; =============================================================================
+;; ============================================================================
 ;; Fetch
 
 
@@ -42,6 +40,36 @@
 
 
 ;; =============================================================================
+;; Many
+
+
+(defn many
+  "Fetch the charge identified by `charge-id`."
+  [conn & {:keys [customer-id limit source managed-account]
+           :or   {limit 10}}]
+  (ribbon/request conn (toolbelt.core/assoc-when
+                        {:endpoint "charges"
+                         :method   :get}
+                        :managed-account managed-account)
+                  (toolbelt.core/assoc-when
+                   {:limit limit}
+                   :customer customer-id
+                   :source source)))
+
+(s/def ::limit pos-int?)
+(s/def ::object #{"all" "alipay_account" "bank_account" "bitcoin_receiver" "card"})
+(s/def ::source (s/or :token string?
+                      :map (s/keys :req-un [::object])))
+(s/fdef many
+        :args (s/cat :conn ribbon/conn?
+                     :opts (s/keys* ::opt-un [::managed-account
+                                              ::customer-id
+                                              ::limit
+                                              ::source]))
+        :ret p/chan?)
+
+
+;; =============================================================================
 ;; Create
 
 
@@ -50,7 +78,7 @@
   [conn amount source & {:keys [description customer-id managed-account email]}]
   (ribbon/request conn {:endpoint   "charges"
                         :method     :post}
-                  (tb/assoc-when
+                  (toolbelt.core/assoc-when
                    {:amount   amount
                     :source   source
                     :currency "usd"}
@@ -79,11 +107,11 @@
 (defn refund!
   "Refund a charge."
   [conn charge & {:keys [amount metadata reason managed-account]}]
-  (ribbon/request conn (tb/assoc-when
+  (ribbon/request conn (toolbelt.core/assoc-when
                         {:endpoint "refunds"
                          :method   :post}
                         :managed-account managed-account)
-                  (tb/assoc-when
+                  (toolbelt.core/assoc-when
                    {:charge charge}
                    :amount (int (* amount 100))
                    :metadata metadata
