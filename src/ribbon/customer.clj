@@ -296,7 +296,7 @@
 ;; =============================================================================
 
 
-(defn create!
+(defn ^{:deprecated "0.7.0"} create!
   "Create a new Stripe customer."
   [conn email source & {:keys [description managed-account]}]
   (ribbon/request conn (tb/assoc-when
@@ -313,6 +313,26 @@
                      :email string?
                      :source string?
                      :opts (s/keys* :opt-un [::managed-account ::description]))
+        :ret p/chan?)
+
+
+(defn ^{:added "0.7.0"} create2!
+  "Create a new Stripe customer."
+  [conn email & {:keys [description managed-account source]}]
+  (ribbon/request conn (tb/assoc-when
+                        {:endpoint "customers"
+                         :method   :post}
+                        :managed-account managed-account)
+                  (tb/assoc-when
+                   {:email email}
+                   :source source
+                   :description description)))
+
+(s/def :create2/source string?)
+(s/fdef create!
+        :args (s/cat :conn ribbon/conn?
+                     :email string?
+                     :opts (s/keys* :opt-un [::managed-account ::description :create2/source]))
         :ret p/chan?)
 
 
@@ -404,6 +424,23 @@
         :args (s/cat :conn ribbon/conn?
                      :customer-id string?
                      :source string?
+                     :opts (s/keys* :opt-un [::managed-account]))
+        :ret p/chan?)
+
+
+(defn fetch-source
+  "Fetch the source identified by `source-id` from the customer identified by
+  `customer-id`."
+  [conn customer-id source-id & {:as opts}]
+  (ribbon/request conn (merge
+                        {:endpoint (format "customers/%s/sources/%s" customer-id source-id)
+                         :method   :get}
+                        opts)))
+
+(s/fdef fetch-source
+        :args (s/cat :conn ribbon/conn?
+                     :customer-id string?
+                     :source-id string?
                      :opts (s/keys* :opt-un [::managed-account]))
         :ret p/chan?)
 
