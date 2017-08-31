@@ -329,7 +329,7 @@
                    :description description)))
 
 (s/def :create2/source string?)
-(s/fdef create!
+(s/fdef create2!
         :args (s/cat :conn ribbon/conn?
                      :email string?
                      :opts (s/keys* :opt-un [::managed-account ::description :create2/source]))
