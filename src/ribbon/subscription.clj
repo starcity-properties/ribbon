@@ -111,6 +111,32 @@
 
 
 ;; =============================================================================
+;; Cancel
+;; =============================================================================
+
+
+(defn cancel!
+  "Cancel the subscription under `subscription-id`."
+  [conn subscription-id & {:keys [managed-account at-period-end]}]
+  (ribbon/request conn
+                  (tb/assoc-when
+                   {:endpoint (format "subscriptions/%s" subscription-id)
+                    :method   :delete}
+                   :managed-account managed-account)
+                  (tb/assoc-when
+                   {}
+                   :at_period_end at-period-end)))
+
+(s/def ::at-period-end boolean?)
+(s/fdef cancel!
+        :args (s/cat :conn ribbon/conn?
+                     :subscription-id string?
+                     :opts (s/keys* :opt-un [::managed-account
+                                             ::at-period-end]))
+        :ret p/chan?)
+
+
+;; =============================================================================
 ;; repl
 ;; =============================================================================
 
