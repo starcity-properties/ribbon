@@ -44,7 +44,7 @@
 
 
 (defn many
-  "Fetch the charge identified by `charge-id`."
+  "Retrieve a list of charges."
   [conn & {:keys [customer-id limit source managed-account]
            :or   {limit 10}}]
   (ribbon/request conn (toolbelt.core/assoc-when
