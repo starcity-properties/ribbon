@@ -8,7 +8,7 @@
                  [org.clojure/core.async "0.2.395"]
                  [http-kit "2.2.0"]
                  [cheshire "5.6.3"]
-                 [starcity/toolbelt "0.1.7"]]
+                 [starcity/toolbelt "0.1.11"]]
 
   :plugins [[s3-wagon-private "1.2.0"]]
 
