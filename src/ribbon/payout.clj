@@ -19,7 +19,6 @@
 (s/def ::method #{"instant" "standard"})
 (s/def ::source-type #{"alipay_account" "bank_account" "card"})
 (s/def ::statement-descriptor (s/and string? #(<= (count %) 22)))
-
 (s/def ::arrival-date util/date-params?)
 (s/def ::created util/date-params?)
 (s/def ::ending-before string?)
