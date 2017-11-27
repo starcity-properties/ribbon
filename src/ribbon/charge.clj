@@ -1,7 +1,8 @@
 (ns ribbon.charge
   (:require [clojure.spec :as s]
             [ribbon.core :as ribbon]
-            [toolbelt.predicates :as p]))
+            [toolbelt.predicates :as p]
+            [toolbelt.core :as tb]))
 
 
 ;; =============================================================================
@@ -13,6 +14,7 @@
 (s/def ::email string?)
 (s/def ::managed-account string?)
 (s/def ::customer-id string?)
+(s/def ::application-fee pos-int?)
 
 
 ;; =============================================================================
@@ -75,25 +77,30 @@
 
 (defn create!
   "Create a new charge."
-  [conn amount source & {:keys [description customer-id managed-account email]}]
-  (ribbon/request conn {:endpoint   "charges"
-                        :method     :post}
+  [conn amount source & {:keys [application-fee description customer-id email
+                                destination managed-account]}]
+  (ribbon/request conn (tb/assoc-when
+                        {:endpoint "charges"
+                         :method   :post}
+                        :managed-account managed-account)
                   (toolbelt.core/assoc-when
                    {:amount   amount
                     :source   source
                     :currency "usd"}
+                   :application_fee application-fee
                    :receipt_email email
                    :customer customer-id
                    :description description
-                   :destination managed-account)))
+                   :destination destination)))
 
 (s/fdef create!
         :args (s/cat :conn ribbon/conn?
                      :amount integer?
                      :source string?
-                     :opts (s/keys* :opt-un [::description
+                     :opts (s/keys* :opt-un [::application-fee
+                                             ::description
                                              ::customer-id
-                                             ::managed-account
+                                             :ribbon/managed-account
                                              ::email]))
         :ret p/chan?)
 
@@ -153,22 +160,11 @@
   (<!! (fetch conn sample-managed-charge {:managed-account sample-managed-account}))
 
   ;; Works
-  (<!! (create! conn 1000 "card_1ADjO1IvRccmW9nOnXB2upzB"
-                {:description "test card charge from Ribbon lib"
-                 :customer-id "cus_AYr6e1rdK4hGF6"
-                 :email       "josh@joinstarcity.com"}))
-
-  ;; Works
-  ;; NOTE: Creates a connect charge via the platform
-  (<!! (create! conn 1000 sample-bank-source
-                {:managed-account sample-managed-account
-                 :description     "test bank charge from Ribbon lib"
-                 :customer-id     sample-customer
-                 :email           "josh@joinstarcity.com"}))
-
-
   (<!! (refund! conn "py_1AawdeJDow24Tc1aNCcUP3ts"
                 :managed-account sample-managed-account
                 :amount 1900.0))
+
+
+  (<!! (create! secret-key ))
 
   )
