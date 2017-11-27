@@ -31,6 +31,14 @@
 
 (s/def :ribbon/managed-account string?)
 
+(s/def ::secret-key string?)
+(s/def ::endpoint string?)
+(s/def ::method keyword?)
+(s/def ::managed-account string?)
+(s/def ::config
+  (s/keys :req-un [::endpoint ::method]
+          :opt-un [::managed-account]))
+
 
 ;; =============================================================================
 ;; Internal
@@ -62,13 +70,8 @@
 ;; =============================================================================
 
 
-(s/def ::secret-key string?)
-(s/def ::endpoint string?)
-(s/def ::method keyword?)
-(s/def ::managed-account string?)
-(s/def ::config
-  (s/keys :req-un [::endpoint ::method]
-          :opt-un [::managed-account]))
+(def ^:dynamic *managed-account* nil)
+
 
 (defn- request*
   "Initiate a Stripe API request, producing a `core.async` channel that will
@@ -81,7 +84,8 @@
                      :method     method
                      :headers    (tb/assoc-when
                                   {"Accept" "application/json"}
-                                  "Stripe-Account" managed-account)
+                                  "Stripe-Account" (or managed-account
+                                                       *managed-account*))
                      :basic-auth [secret-key ""]}
          [k params] (params-for method params)]
      (let [c (chan 1)]
@@ -110,6 +114,16 @@
      (request* this conf))
     ([this conf params]
      (request* this conf params))))
+
+
+(defmacro with-connect-account
+  "Execute all ribbon requests in the default context of the Stripe connect
+  `account-id`."
+  [account-id & body]
+  `(if (string? ~account-id)
+     (with-bindings {#'ribbon.core/*managed-account* ~account-id}
+       ~@body)
+     (do ~@body)))
 
 
 ;; =============================================================================
