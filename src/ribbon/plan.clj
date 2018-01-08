@@ -78,6 +78,26 @@
         :ret p/chan?)
 
 
+;; ==============================================================================
+;; delete -----------------------------------------------------------------------
+;; ==============================================================================
+
+
+(defn delete!
+  "Delete a plan."
+  [conn plan-id & {:keys [managed-account]}]
+  (ribbon/request conn (tb/assoc-when
+                        {:endpoint (format "plans/%s" plan-id)
+                         :method   :delete}
+                        :managed-account managed-account)))
+
+(s/fdef delete!
+        :args (s/cat :conn ribbon/conn?
+                     :plan-id string?
+                     :opts (s/keys* :opt-un [::managed-account]))
+        :ret p/chan?)
+
+
 ;; =============================================================================
 ;; repl
 ;; =============================================================================
