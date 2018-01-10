@@ -3,12 +3,13 @@
   :url "https://github.com/starcity-properties/ribbon"
   :license {:name "Eclipse Public License"
             :url  "http://www.eclipse.org/legal/epl-v10.html"}
-  :dependencies [[org.clojure/clojure "1.9.0-alpha14"]
-                 [org.clojure/test.check "0.9.0"]
-                 [org.clojure/core.async "0.2.395"]
+  :dependencies [[org.clojure/clojure "1.9.0"]
+                 [org.clojure/core.async "0.4.474"]
                  [http-kit "2.2.0"]
-                 [cheshire "5.6.3"]
-                 [starcity/toolbelt "0.1.11"]]
+                 [cheshire "5.8.0"]
+                 [clj-time "0.14.2"]
+                 [starcity/toolbelt-async "0.4.0"]
+                 [starcity/toolbelt-core "0.3.0"]]
 
   :plugins [[s3-wagon-private "1.2.0"]]
 

@@ -1,8 +1,8 @@
 (ns ribbon.balance
-  (:require [clojure.spec :as s]
+  (:require [clojure.spec.alpha :as s]
             [ribbon.core :as ribbon]
             [ribbon.util :as util]
-            [toolbelt.predicates :as p]
+            [toolbelt.async :as ta]
             [toolbelt.core :as tb]))
 
 ;; =============================================================================
@@ -37,7 +37,7 @@
 (s/fdef retrieve
         :args (s/cat :conn ribbon/conn?
                      :opts (s/keys* :opt-un [:ribbon/managed-account]))
-        :ret p/chan?)
+        :ret ta/chan?)
 
 
 ;; =============================================================================
@@ -55,7 +55,8 @@
 (s/fdef retrieve-transaction
         :args (s/cat :conn ribbon/conn?
                      :transaction-id string?
-                     :opts (s/keys* :opt-un [:ribbon/managed-account])))
+                     :opts (s/keys* :opt-un [:ribbon/managed-account]))
+        :ret ta/chan?)
 
 
 ;; =============================================================================
@@ -96,7 +97,7 @@
                                              ::starting_after
                                              ::type
                                              :ribbon/managed-account]))
-        :ret p/chan?)
+        :ret ta/chan?)
 
 
 (comment

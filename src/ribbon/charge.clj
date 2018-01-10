@@ -1,8 +1,8 @@
 (ns ribbon.charge
-  (:require [clojure.spec :as s]
+  (:require [clojure.spec.alpha :as s]
             [ribbon.core :as ribbon]
-            [toolbelt.predicates :as p]
-            [toolbelt.core :as tb]))
+            [toolbelt.core :as tb]
+            [toolbelt.async :as ta]))
 
 
 ;; =============================================================================
@@ -38,7 +38,7 @@
         :args (s/cat :conn ribbon/conn?
                      :charge-id string?
                      :opts (s/keys* :opt-un [::managed-account]))
-        :ret p/chan?)
+        :ret ta/chan?)
 
 
 ;; =============================================================================
@@ -49,11 +49,11 @@
   "Retrieve a list of charges."
   [conn & {:keys [customer-id limit source managed-account]
            :or   {limit 10}}]
-  (ribbon/request conn (toolbelt.core/assoc-when
+  (ribbon/request conn (tb/assoc-when
                         {:endpoint "charges"
                          :method   :get}
                         :managed-account managed-account)
-                  (toolbelt.core/assoc-when
+                  (tb/assoc-when
                    {:limit limit}
                    :customer customer-id
                    :source source)))
@@ -68,7 +68,7 @@
                                               ::customer-id
                                               ::limit
                                               ::source]))
-        :ret p/chan?)
+        :ret ta/chan?)
 
 
 ;; =============================================================================
@@ -83,7 +83,7 @@
                         {:endpoint "charges"
                          :method   :post}
                         :managed-account managed-account)
-                  (toolbelt.core/assoc-when
+                  (tb/assoc-when
                    {:amount   amount
                     :source   source
                     :currency "usd"}
@@ -102,7 +102,7 @@
                                              ::customer-id
                                              :ribbon/managed-account
                                              ::email]))
-        :ret p/chan?)
+        :ret ta/chan?)
 
 
 ;; =============================================================================
@@ -117,7 +117,7 @@
                         {:endpoint "refunds"
                          :method   :post}
                         :managed-account managed-account)
-                  (toolbelt.core/assoc-when
+                  (tb/assoc-when
                    {:charge charge}
                    :amount (int (* amount 100))
                    :metadata metadata

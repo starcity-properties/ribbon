@@ -1,9 +1,8 @@
 (ns ribbon.subscription
-  (:require [clojure.spec :as s]
+  (:require [clojure.spec.alpha :as s]
             [ribbon.core :as ribbon]
-            [toolbelt
-             [core :as tb]
-             [predicates :as p]]))
+            [toolbelt.async :as ta]
+            [toolbelt.core :as tb]))
 
 
 ;; =============================================================================
@@ -33,7 +32,7 @@
         :args (s/cat :conn ribbon/conn?
                      :subscription-id string?
                      :opts (s/keys* :opt-un [::managed-account]))
-        :ret p/chan?)
+        :ret ta/chan?)
 
 
 ;; =============================================================================
@@ -75,7 +74,7 @@
                                              ::fee-percent
                                              ::trial-end
                                              ::quantity]))
-        :ret p/chan?)
+        :ret ta/chan?)
 
 
 ;; =============================================================================
@@ -107,7 +106,7 @@
                                              ::fee-percent
                                              ::source
                                              ::quantity]))
-        :ret p/chan?)
+        :ret ta/chan?)
 
 
 ;; =============================================================================
@@ -133,7 +132,7 @@
                      :subscription-id string?
                      :opts (s/keys* :opt-un [::managed-account
                                              ::at-period-end]))
-        :ret p/chan?)
+        :ret ta/chan?)
 
 
 ;; =============================================================================

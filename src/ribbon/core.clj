@@ -1,12 +1,11 @@
 (ns ribbon.core
   (:require [cheshire.core :as json]
             [clojure.core.async :as a :refer [chan put!]]
-            [clojure.spec :as s]
+            [clojure.spec.alpha :as s]
             [org.httpkit.client :as http]
             [ribbon.codec :as codec]
-            [toolbelt
-             [core :as tb]
-             [predicates :as p]]))
+            [toolbelt.async :as ta]
+            [toolbelt.core :as tb]))
 
 ;; =============================================================================
 ;; Interface
@@ -96,7 +95,7 @@
         :args (s/cat :secret-key ::secret-key
                      :config ::config
                      :params (s/? map?))
-        :ret p/chan?)
+        :ret ta/chan?)
 
 
 ;;; impl

@@ -1,6 +1,6 @@
 (ns ribbon.util
   (:require [toolbelt.core :as tb]
-            [clojure.spec :as s]
+            [clojure.spec.alpha :as s]
             [clj-time.coerce :as c]))
 
 

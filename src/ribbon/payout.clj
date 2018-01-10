@@ -1,11 +1,11 @@
 (ns ribbon.payout
   (:require [clj-time.coerce :as c]
             [clj-time.core :as t]
-            [clojure.spec :as s]
+            [clojure.spec.alpha :as s]
             [ribbon.core :as ribbon]
             [ribbon.util :as util]
-            [toolbelt.core :as tb]
-            [toolbelt.predicates :as p]))
+            [toolbelt.async :as ta]
+            [toolbelt.core :as tb]))
 
 ;; =============================================================================
 ;; Spec
@@ -62,7 +62,7 @@
                                              ::source-type
                                              :ribbon/managed-account
                                              ::statement-descriptor]))
-        :ret p/chan?)
+        :ret ta/chan?)
 
 
 ;; =============================================================================
@@ -82,7 +82,7 @@
         :args (s/cat :conn ribbon/conn?
                      :payout-id string?
                      :opts (s/keys* :opt-un [:ribbon/managed-account]))
-        :ret p/chan?)
+        :ret ta/chan?)
 
 
 ;; =============================================================================
@@ -106,7 +106,7 @@
                      :payout-id string?
                      :opts (s/keys* :opt-un [::metadata
                                              :ribbon/managed-account]))
-        :ret p/chan?)
+        :ret ta/chan?)
 
 
 ;; =============================================================================
@@ -142,7 +142,7 @@
                                              ::starting-after
                                              ::status
                                              :ribbon/managed-account]))
-        :ret p/chan?)
+        :ret ta/chan?)
 
 
 ;; =============================================================================
@@ -162,7 +162,7 @@
         :args (s/cat :conn ribbon/conn?
                      :payout-id string?
                      :opts (s/keys* :opt-un [:ribbon/managed-account]))
-        :ret p/chan?)
+        :ret ta/chan?)
 
 
 

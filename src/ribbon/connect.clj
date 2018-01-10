@@ -1,10 +1,9 @@
 (ns ribbon.connect
-  (:require [clojure.spec :as s]
-            [ribbon.core :as ribbon]
-            [toolbelt.predicates :as p]
-            [toolbelt.async :refer [<!!?]]
+  (:require [clojure.spec.alpha :as s]
             [clj-time.coerce :as c]
             [clj-time.core :as t]
+            [ribbon.core :as ribbon]
+            [toolbelt.async :as ta :refer [<!!?]]
             [toolbelt.core :as tb]))
 
 
@@ -28,7 +27,7 @@
                      :customer-id string?
                      :bank-token string?
                      :managed-account string?)
-        :ret p/chan?)
+        :ret ta/chan?)
 
 
 ;; =============================================================================
@@ -121,7 +120,7 @@
 
 (s/fdef create-account!
         :args (s/cat :conn ribbon/conn? :owner map? :business map? :account map?)
-        :ret p/chan?)
+        :ret ta/chan?)
 
 
 (comment

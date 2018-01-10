@@ -1,9 +1,7 @@
 (ns ribbon.invoice
-  (:require [clojure.spec :as s]
+  (:require [clojure.spec.alpha :as s]
             [ribbon.core :as ribbon]
-            [toolbelt
-             [core :as tb]
-             [predicates :as p]]))
+            [toolbelt.async :as ta]))
 
 
 ;; =============================================================================
@@ -35,4 +33,4 @@
         :args (s/cat :conn ribbon/conn?
                      :invoice-id string?
                      :opts (s/keys* :opt-un [::managed-account]))
-        :ret p/chan?)
+        :ret ta/chan?)

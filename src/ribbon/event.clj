@@ -1,7 +1,7 @@
 (ns ribbon.event
-  (:require [clojure.spec :as s]
+  (:require [clojure.spec.alpha :as s]
             [ribbon.core :as ribbon]
-            [toolbelt.predicates :as p]))
+            [toolbelt.async :as ta]))
 
 
 ;; =============================================================================
@@ -59,7 +59,7 @@
         :args (s/cat :conn ribbon/conn?
                      :event-id string?
                      :opts (s/keys* :opt-un [::managed-account]))
-        :ret p/chan?)
+        :ret ta/chan?)
 
 
 ;; =============================================================================

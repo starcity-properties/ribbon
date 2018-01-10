@@ -1,9 +1,8 @@
 (ns ribbon.customer
-  (:require [clojure.spec :as s]
+  (:require [clojure.spec.alpha :as s]
             [ribbon.core :as ribbon]
-            [toolbelt
-             [core :as tb]
-             [predicates :as p]]))
+            [toolbelt.core :as tb]
+            [toolbelt.async :as ta]))
 
 
 ;; =============================================================================
@@ -288,7 +287,7 @@
         :args (s/cat :conn ribbon/conn?
                      :customer-id string?
                      :opts (s/keys* :opt-un [::managed-account]))
-        :ret p/chan?)
+        :ret ta/chan?)
 
 
 ;; =============================================================================
@@ -313,7 +312,7 @@
                      :email string?
                      :source string?
                      :opts (s/keys* :opt-un [::managed-account ::description]))
-        :ret p/chan?)
+        :ret ta/chan?)
 
 
 (defn ^{:added "0.7.0"} create2!
@@ -333,7 +332,7 @@
         :args (s/cat :conn ribbon/conn?
                      :email string?
                      :opts (s/keys* :opt-un [::managed-account ::description :create2/source]))
-        :ret p/chan?)
+        :ret ta/chan?)
 
 
 ;; =============================================================================
@@ -358,7 +357,7 @@
         :args (s/cat :conn ribbon/conn?
                      :customer-id string?
                      :opts (s/keys* :opt-un [::managed-account ::description ::default-source]))
-        :ret p/chan?)
+        :ret ta/chan?)
 
 
 ;; =============================================================================
@@ -378,7 +377,7 @@
         :args (s/cat :conn ribbon/conn?
                      :customer-id string?
                      :opts (s/keys :opt-un [::managed-account]))
-        :ret p/chan?)
+        :ret ta/chan?)
 
 
 ;; =============================================================================
@@ -404,7 +403,7 @@
                      :amount-1 ::deposit-amount
                      :amount-2 ::deposit-amount
                      :opts (s/keys* :opt-un [::managed-account]))
-        :ret p/chan?)
+        :ret ta/chan?)
 
 ;; =============================================================================
 ;; Add Source
@@ -425,7 +424,7 @@
                      :customer-id string?
                      :source string?
                      :opts (s/keys* :opt-un [::managed-account]))
-        :ret p/chan?)
+        :ret ta/chan?)
 
 
 (defn fetch-source
@@ -442,7 +441,7 @@
                      :customer-id string?
                      :source-id string?
                      :opts (s/keys* :opt-un [::managed-account]))
-        :ret p/chan?)
+        :ret ta/chan?)
 
 
 (defn delete-source!
@@ -459,7 +458,7 @@
                      :customer-id string?
                      :source-id string?
                      :opts (s/keys* :opt-un [::managed-account]))
-        :ret p/chan?)
+        :ret ta/chan?)
 
 
 ;; =============================================================================
