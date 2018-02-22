@@ -49,17 +49,19 @@
     (assert (<= (count descriptor) max-descriptor-length)
             "The statement descriptor must be less than or equal to 22 characters."))
   (ribbon/request conn (tb/assoc-when
-                        {:endpoint   "plans"
-                         :method     :post}
+                        {:endpoint "plans"
+                         :method   :post}
                         :managed-account managed-account)
                   (tb/assoc-when
                    {:id       plan-id
                     :amount   amount
                     :currency "usd"
-                    :interval (clojure.core/name interval)
-                    :name     name}
+                    :interval (clojure.core/name interval)}
                    :trial_period_days trial-days
-                   :statement_descriptor descriptor)))
+                   :product (tb/assoc-when
+                             nil
+                             :statement_descriptor descriptor
+                             :name                 name))))
 
 (s/def ::trial-days pos-int?)
 (s/def ::descriptor (s/and string? #(<= (count %) max-descriptor-length)))
@@ -115,7 +117,8 @@
               :managed-account sample-managed-account))
 
   ;; Works
-  (<!! (create! secret-key "TESTPLAN1" "Test Plan 1" 2000 :month
+  (clojure.core.async/<!! (create! secret-key "TESTPLAN4000" "Test Plan 4000" 2000 :month
                 :trial-days 5
                 :descriptor "subs to test plan"))
+
   )
